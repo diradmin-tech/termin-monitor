@@ -143,6 +143,16 @@ def main():
     print("--- Seitentext (Auszug) ---")
     print(text[:1000])
     print("--- Ende Auszug ---")
+    try:
+        send_push(
+            server,
+            topic,
+            "Terminmonitor: Seite unklar",
+            "Die Terminseite zeigt weder 'keine Termine' noch Uhrzeiten. Bitte im GitHub-Log prüfen.",
+        )
+        print("Hinweis-Benachrichtigung gesendet.")
+    except Exception as exc:
+        print(f"Hinweis-Benachrichtigung fehlgeschlagen: {exc}")
     return 1
 
 
