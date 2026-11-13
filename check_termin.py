@@ -26,6 +26,25 @@ START_URL = "https://www.justiztermine.nrw.de/"
 ORT = "Amtsgericht Dortmund"
 DIENSTLEISTUNG = "Kirchenaustritt"
 NO_SLOTS_TEXT = "keine termine"  # Vergleich in Kleinbuchstaben
+
+COLLECT_TEXT_JS = """
+() => {
+  const collect = (root) => {
+    let s = '';
+    for (const node of root.childNodes) {
+      if (node.nodeType === 3) {
+        s += ' ' + node.textContent;
+      } else if (node.nodeType === 1) {
+        if (['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(node.tagName)) continue;
+        if (node.shadowRoot) s += ' ' + collect(node.shadowRoot);
+        s += ' ' + collect(node);
+      }
+    }
+    return s;
+  };
+  return collect(document.body);
+}
+"""
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")  # Uhrzeiten deuten auf freie Slots hin
 
 
@@ -70,9 +89,9 @@ def fetch_text(start_url, screenshot_path):
                 raise
             page.wait_for_timeout(2000)  # Terminseite nachladen lassen
             page.screenshot(path=screenshot_path, full_page=True)
-            # Zwei Lesarten zusammen, falls inner_text leer bleibt
-            text = page.inner_text("body") or ""
-            text += "\n" + (page.text_content("body") or "")
+            # Text inklusive Shadow-DOM lesen (inner_text erfasst ihn nicht),
+            # Script- und Style-Inhalte auslassen
+            text = page.evaluate(COLLECT_TEXT_JS)
             return " ".join(text.split())
         finally:
             browser.close()
