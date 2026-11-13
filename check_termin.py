@@ -29,17 +29,16 @@ NO_SLOTS_TEXT = "keine Termine mehr"
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")  # Uhrzeiten deuten auf freie Slots hin
 
 
-def choose(page, placeholder, value, step):
-    """Öffnet das Dropdown mit dem Platzhalter und wählt die Option mit dem Text 'value'."""
-    print(f"Schritt '{step}': öffne Dropdown '{placeholder}', wähle '{value}'")
-    page.get_by_text(placeholder, exact=True).first.click(timeout=20_000)
-    page.wait_for_timeout(800)
+def choose(combobox, page, value, step):
+    """Tippt den Suchbegriff in das Dropdown-Feld und wählt die passende Option."""
+    print(f"Schritt '{step}': suche '{value}'")
+    combobox.focus(timeout=20_000)
+    combobox.press_sequentially(value, delay=60)
+    page.wait_for_timeout(1000)
     try:
         page.get_by_role("option", name=value).first.click(timeout=5_000)
     except Exception:
-        # Fallback: Text eintippen und mit Enter bestätigen
-        page.keyboard.type(value)
-        page.wait_for_timeout(800)
+        print(f"Option '{value}' nicht klickbar, bestätige mit Enter.")
         page.keyboard.press("Enter")
     page.wait_for_timeout(2000)
 
@@ -53,8 +52,10 @@ def fetch_text(start_url, screenshot_path):
             page.goto(start_url, wait_until="networkidle", timeout=60_000)
             page.wait_for_timeout(2000)
             try:
-                choose(page, "Dienststelle auswählen", ORT, "Dienststelle")
-                choose(page, "Dienstleistung auswählen", DIENSTLEISTUNG, "Dienstleistung")
+                agency = page.locator('input[role="combobox"][aria-labelledby="citizen-agency-label"]')
+                service = page.locator('input[role="combobox"]:not([aria-labelledby="citizen-agency-label"])').first
+                choose(agency, page, ORT, "Dienststelle")
+                choose(service, page, DIENSTLEISTUNG, "Dienstleistung")
                 # Weiter-Button, falls die Seite einen Schritt zum Bestätigen verlangt
                 weiter = page.get_by_role("button", name=re.compile("Weiter|Nächste", re.I))
                 if weiter.count():
