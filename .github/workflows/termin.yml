@@ -2,7 +2,7 @@ name: Terminmonitor
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # alle 15 Minuten (GitHub: Verzögerungen möglich)
+    - cron: "*/5 * * * *"   # alle 15 Minuten (GitHub: Verzögerungen möglich)
   workflow_dispatch:          # manuell auslösbar zum Testen
 
 jobs:
