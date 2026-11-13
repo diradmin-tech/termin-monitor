@@ -25,7 +25,7 @@ from playwright.sync_api import sync_playwright
 START_URL = "https://www.justiztermine.nrw.de/"
 ORT = "Amtsgericht Dortmund"
 DIENSTLEISTUNG = "Kirchenaustritt"
-NO_SLOTS_TEXT = "keine Termine mehr"
+NO_SLOTS_TEXT = "keine termine"  # Vergleich in Kleinbuchstaben
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")  # Uhrzeiten deuten auf freie Slots hin
 
 
@@ -70,7 +70,10 @@ def fetch_text(start_url, screenshot_path):
                 raise
             page.wait_for_timeout(2000)  # Terminseite nachladen lassen
             page.screenshot(path=screenshot_path, full_page=True)
-            return page.inner_text("body")
+            # Zwei Lesarten zusammen, falls inner_text leer bleibt
+            text = page.inner_text("body") or ""
+            text += "\n" + (page.text_content("body") or "")
+            return " ".join(text.split())
         finally:
             browser.close()
 
@@ -99,7 +102,7 @@ def main():
         print(f"Fehler beim Laden der Seite: {exc}")
         return 1
 
-    if NO_SLOTS_TEXT in text:
+    if NO_SLOTS_TEXT in text.lower():
         print("Keine Termine.")
         return 0
 
@@ -119,7 +122,7 @@ def main():
 
     print("Ergebnis unklar: weder 'keine Termine' noch Uhrzeiten gefunden. Seite prüfen.")
     print("--- Seitentext (Auszug) ---")
-    print(" ".join(text.split())[:1000])
+    print(text[:1000])
     print("--- Ende Auszug ---")
     return 1
 
