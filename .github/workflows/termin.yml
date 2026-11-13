@@ -23,6 +23,13 @@ jobs:
 
       - name: Check appointments
         env:
-          TERMIN_URL: ${{ secrets.TERMIN_URL }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: python check_termin.py
+
+      - name: Upload screenshot (bei Fehler)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seite-screenshot
+          path: screenshot.png
+          if-no-files-found: ignore
