@@ -29,10 +29,18 @@ NO_SLOTS_TEXT = "keine Termine mehr"
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")  # Uhrzeiten deuten auf freie Slots hin
 
 
-def click_text(page, label, step):
-    """Klickt auf das erste sichtbare Element mit diesem Text."""
-    print(f"Schritt '{step}': klicke '{label}'")
-    page.get_by_text(label, exact=False).first.click(timeout=20_000)
+def choose(page, placeholder, value, step):
+    """Öffnet das Dropdown mit dem Platzhalter und wählt die Option mit dem Text 'value'."""
+    print(f"Schritt '{step}': öffne Dropdown '{placeholder}', wähle '{value}'")
+    page.get_by_text(placeholder, exact=True).first.click(timeout=20_000)
+    page.wait_for_timeout(800)
+    try:
+        page.get_by_role("option", name=value).first.click(timeout=5_000)
+    except Exception:
+        # Fallback: Text eintippen und mit Enter bestätigen
+        page.keyboard.type(value)
+        page.wait_for_timeout(800)
+        page.keyboard.press("Enter")
     page.wait_for_timeout(2000)
 
 
@@ -45,8 +53,14 @@ def fetch_text(start_url, screenshot_path):
             page.goto(start_url, wait_until="networkidle", timeout=60_000)
             page.wait_for_timeout(2000)
             try:
-                click_text(page, ORT, "Ort")
-                click_text(page, DIENSTLEISTUNG, "Dienstleistung")
+                choose(page, "Dienststelle auswählen", ORT, "Dienststelle")
+                choose(page, "Dienstleistung auswählen", DIENSTLEISTUNG, "Dienstleistung")
+                # Weiter-Button, falls die Seite einen Schritt zum Bestätigen verlangt
+                weiter = page.get_by_role("button", name=re.compile("Weiter|Nächste", re.I))
+                if weiter.count():
+                    print("Klicke 'Weiter'")
+                    weiter.first.click(timeout=10_000)
+                    page.wait_for_timeout(3000)
             except Exception as exc:
                 print(f"Auswahl fehlgeschlagen: {exc}")
                 print("Seitentext an dieser Stelle:")
